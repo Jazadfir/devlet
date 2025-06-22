@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATEJİK SAVUNMA KOMUTA MERKEZİ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --military-dark: #0a1a0f;
+            --military-green: #2c5e1a;
+            --military-light: #4c8c2a;
+            --military-gold: #c9b458;
+            --military-red: #8b0000;
+            --panel-bg: rgba(15, 35, 20, 0.8);
+            --panel-border: #3a5f2b;
+        }
+        
+        body {
+            background: radial-gradient(circle, var(--military-dark) 0%, #000 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Arkaplan Efektleri */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(50, 100, 50, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(50, 100, 50, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(0, 255, 100, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 100, 0.7);
+            animation: scan 4s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        @keyframes scan {
+            0% { top: -5px; }
+            100% { top: 100%; }
+        }
+        
+        /* Ana Konteyner */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+        
+        /* Başlık Alanı */
+        header {
+            grid-column: 1 / -1;
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 15px 30px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 80, 0, 0.5);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            color: var(--military-light);
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            color: var(--military-gold);
+            letter-spacing: 1px;
+        }
+        
+        .logo-text p {
+            font-size: 0.9rem;
+            color: #aaa;
+            font-style: italic;
+        }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+        
+        .datetime {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid var(--panel-border);
+        }
+        
+        /* Sol Panel - Menü */
+        .sidebar {
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(0, 80, 0, 0.5);
+        }
+        
+        .menu-title {
+            color: var(--military-gold);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+        
+        .menu-item {
+            padding: 12px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background: rgba(60, 100, 60, 0.4);
+            box-shadow: 0 0 10px rgba(0, 200, 0, 0.3);
+        }
+        
+        .menu-item i {
+            width: 24px;
+            text-align: center;
+            color: var(--military-light);
+        }
+        
+        /* Ana İçerik Alanı */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+        
+        .map-section {
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 80, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+        
+        .section-title {
+            color: var(--military-gold);
+            font-size: 1.4rem;
+        }
+        
+        .map-container {
+            flex-grow: 1;
+            background: #111;
+            border: 1px solid var(--panel-border);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(50, 100, 50, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(50, 100, 50, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        .map-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .map-btn {
+            background: rgba(40, 80, 40, 0.6);
+            border: 1px solid var(--panel-border);
+            color: #ddd;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.3s;
+        }
+        
+        .map-btn:hover {
+            background: rgba(60, 120, 60, 0.8);
+            box-shadow: 0 0 10px rgba(0, 200, 0, 0.3);
+        }
+        
+        .map-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--military-red);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--military-red);
+            cursor: pointer;
+        }
+        
+        .map-marker::after {
+            content: "";
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--military-red);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { width: 40px; height: 40px; opacity: 1; }
+            100% { width: 80px; height: 80px; opacity: 0; }
+        }
+        
+        /* Sağ Panel - Kontroller */
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-panel {
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 80, 0, 0.5);
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--military-gold);
+        }
+        
+        .control-select, .control-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(20, 40, 20, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .control-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to bottom, var(--military-green), var(--military-dark));
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .control-btn:hover {
+            background: linear-gradient(to bottom, var(--military-light), var(--military-green));
+            box-shadow: 0 0 15px rgba(0, 200, 0, 0.4);
+        }
+        
+        .control-btn.danger {
+            background: linear-gradient(to bottom, #8b0000, #500000);
+        }
+        
+        .control-btn.danger:hover {
+            background: linear-gradient(to bottom, #a00000, #700000);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+        }
+        
+        .status-indicators {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-card {
+            background: rgba(20, 40, 20, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .status-card i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--military-light);
+        }
+        
+        .status-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--military-gold);
+        }
+        
+        .status-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        /* Log Bölümü */
+        .log-section {
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 80, 0, 0.5);
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+        
+        .log-container {
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--panel-border);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(60, 100, 60, 0.3);
+        }
+        
+        .log-time {
+            color: var(--military-light);
+            margin-right: 10px;
+        }
+        
+        .log-info {
+            color: #ddd;
+        }
+        
+        .log-warning {
+            color: #ffaa00;
+        }
+        
+        .log-danger {
+            color: #ff5555;
+        }
+        
+        .log-success {
+            color: #55ff55;
+        }
+        
+        /* Kamera Önizleme */
+        .camera-preview {
+            width: 100%;
+            height: 200px;
+            background: #111;
+            border: 1px solid var(--panel-border);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .camera-feed {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #0a0a0a, #111);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--military-light);
+            font-size: 1.2rem;
+            position: relative;
+        }
+        
+        /* Liste Tabloları */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .data-table th {
+            background: rgba(40, 80, 40, 0.6);
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid var(--panel-border);
+            color: var(--military-gold);
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(60, 100, 60, 0.3);
+        }
+        
+        .data-table tr:hover {
+            background: rgba(60, 100, 60, 0.3);
+        }
+        
+        /* Animasyonlar */
+        @keyframes nukeEffect {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+        
+        .nuke-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #ff0000 0%, #990000 70%, #330000 100%);
+            display: none;
+            z-index: 1000;
+            animation: nukeEffect 3s linear;
+            pointer-events: none;
+        }
+        
+        /* Responsive Tasarım */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .status-bar {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Arkaplan Efektleri -->
+    <div class="grid-overlay"></div>
+    <div class="scan-line"></div>
+    <div class="nuke-animation" id="nukeAnimation"></div>
+    
+    <!-- Ana Konteyner -->
+    <div class="container">
+        <!-- Başlık Alanı -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>STRATEJİK SAVUNMA KOMUTA MERKEZİ</h1>
+                    <p>ULUSAL GÜVENLİK VE ASKERİ OPERASYONLAR</p>
+                </div>
+            </div>
+            <div class="status-bar">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>SİSTEM DURUMU: AKTİF</span>
+                </div>
+                <div class="datetime" id="datetime">22 Haziran 2025 - 14:30:45</div>
+            </div>
+        </header>
+        
+        <!-- Sol Panel - Menü -->
+        <aside class="sidebar">
+            <h2 class="menu-title">OPERASYON KONTROLLERİ</h2>
+            <div class="menu-item active" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Kontrol Paneli</span>
+            </div>
+            <div class="menu-item" data-section="drones">
+                <i class="fas fa-fighter-jet"></i>
+                <span>İHA/SİHA Kontrol</span>
+            </div>
+            <div class="menu-item" data-section="missiles">
+                <i class="fas fa-missile"></i>
+                <span>Füze Sistemleri</span>
+            </div>
+            <div class="menu-item" data-section="bombs">
+                <i class="fas fa-bomb"></i>
+                <span>Bombardıman</span>
+            </div>
+            <div class="menu-item" data-section="surveillance">
+                <i class="fas fa-camera"></i>
+                <span>Gözetleme Sistemleri</span>
+            </div>
+            <div class="menu-item" data-section="wanted">
+                <i class="fas fa-user-secret"></i>
+                <span>Arananlar Listesi</span>
+            </div>
+            <div class="menu-item" data-section="utilities">
+                <i class="fas fa-bolt"></i>
+                <span>Altyapı Kontrolü</span>
+            </div>
+            
+            <h2 class="menu-title" style="margin-top: 30px;">SİSTEM AYARLARI</h2>
+            <div class="menu-item">
+                <i class="fas fa-user-cog"></i>
+                <span>Kullanıcı Hesabı</span>
+            </div>
+            <div class="menu-item">
+                <i class="fas fa-lock"></i>
+                <span>Güvenlik Ayarları</span>
+            </div>
+            <div class="menu-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Çıkış Yap</span>
+            </div>
+        </aside>
+        
+        <!-- Ana İçerik Alanı -->
+        <main class="main-content">
+            <!-- Harita Bölümü -->
+            <section class="map-section">
+                <div class="section-header">
+                    <h2 class="section-title">TÜRKİYE STRATEJİK HARİTASI</h2>
+                    <div class="map-scale">Ölçek: 1:1.500.000</div>
+                </div>
+                <div class="map-container" id="mapContainer">
+                    <div class="map-grid"></div>
+                    <!-- Harita işaretleyicileri buraya eklenecek -->
+                </div>
+                <div class="map-controls">
+                    <button class="map-btn">YAKINLAŞTIR</button>
+                    <button class="map-btn">UZAKLAŞTIR</button>
+                    <button class="map-btn">TAM EKRAN</button>
+                    <button class="map-btn">SIFIRLA</button>
+                </div>
+            </section>
+            
+            <!-- Sağ Panel - Kontroller -->
+            <div class="control-section">
+                <!-- Drone Kontrol Paneli -->
+                <div class="control-panel">
+                    <h2 class="section-title">İHA/SİHA KONTROLÜ</h2>
+                    <div class="control-group">
+                        <label class="control-label">Drone Tipi</label>
+                        <select class="control-select" id="droneType">
+                            <option value="iha">Tactical İHA (Keşif)</option>
+                            <option value="siha">SİHA-AKINCI (Saldırı)</option>
+                            <option value="anka">ANKA-S (İstihbarat)</option>
+                        </select>
+                        
+                        <label class="control-label">Hedef Koordinatları</label>
+                        <input type="text" class="control-input" id="targetCoords" placeholder="36.879, 30.702">
+                        
+                        <div class="status-indicators">
+                            <div class="status-card">
+                                <i class="fas fa-battery-full"></i>
+                                <div class="status-value">98%</div>
+                                <div class="status-label">PİL DURUMU</div>
+                            </div>
+                            <div class="status-card">
+                                <i class="fas fa-satellite"></i>
+                                <div class="status-value">12</div>
+                                <div class="status-label">AKTİF DRONE</div>
+                            </div>
+                        </div>
+                        
+                        <button class="control-btn" onclick="launchDrone()">
+                            <i class="fas fa-paper-plane"></i> DRONE GÖNDER
+                        </button>
+                        <button class="control-btn danger" onclick="fireDrone()">
+                            <i class="fas fa-fire"></i> HEDEFİ İMHA ET
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Füze Kontrol Paneli -->
+                <div class="control-panel">
+                    <h2 class="section-title">FÜZE SİSTEMLERİ</h2>
+                    <div class="control-group">
+                        <label class="control-label">Füze Tipi</label>
+                        <select class="control-select" id="missileType">
+                            <option value="short">Kısa Menzil (T-122)</option>
+                            <option value="medium">Orta Menzil (BORA-1)</option>
+                            <option value="long">Uzun Menzil (SOM-J)</option>
+                            <option value="nuke">Nükleer Başlıklı</option>
+                        </select>
+                        
+                        <label class="control-label">Hedef Koordinatları</label>
+                        <input type="text" class="control-input" id="missileTarget" placeholder="39.933, 32.859">
+                        
+                        <button class="control-btn" onclick="launchMissile()">
+                            <i class="fas fa-rocket"></i> FÜZE FIRLAT
+                        </button>
+                        <button class="control-btn danger" onclick="launchNuke()">
+                            <i class="fas fa-radiation"></i> NÜKLEER FIRLAT
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Log Bölümü -->
+            <section class="log-section">
+                <h2 class="section-title">SİSTEM KAYITLARI</h2>
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry">
+                        <span class="log-time">14:25:01</span>
+                        <span class="log-info">Sistem başlatıldı. Tüm modüller aktif.</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-time">14:26:45</span>
+                        <span class="log-success">S-400 radar sistemi çevrimiçi oldu.</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-time">14:28:12</span>
+                        <span class="log-warning">Sınır bölgesinde hareketlilik tespit edildi.</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-time">14:29:30</span>
+                        <span class="log-info">AKINCI-S İHA hazır durumda.</span>
+                    </div>
+                    <!-- Kayıtlar JavaScript ile eklenecek -->
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // Sistem saatini güncelleme
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('tr-TR', options);
+        }
+        
+        // Log ekleme fonksiyonu
+        function addLog(message, type = 'info') {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('tr-TR');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-time">${timeString}</span>
+                <span class="log-${type}">${message}</span>
+            `;
+            document.getElementById('logContainer').prepend(logEntry);
+            document.getElementById('logContainer').scrollTop = 0;
+        }
+        
+        // Haritaya rastgele işaretleyici ekleme
+        function addRandomMarkers() {
+            const mapContainer = document.getElementById('mapContainer');
+            const markers = [
+                { top: 30, left: 40, title: 'Askeri Üs' },
+                { top: 45, left: 35, title: 'Radar İstasyonu' },
+                { top: 60, left: 50, title: 'Sınır Karakolu' },
+                { top: 35, left: 55, title: 'Hava Üssü' },
+                { top: 50, left: 60, title: 'Komuta Merkezi' }
+            ];
+            
+            markers.forEach(marker => {
+                const markerEl = document.createElement('div');
+                markerEl.className = 'map-marker';
+                markerEl.style.top = `${marker.top}%`;
+                markerEl.style.left = `${marker.left}%`;
+                markerEl.title = marker.title;
+                mapContainer.appendChild(markerEl);
+            });
+        }
+        
+        // Drone gönderme simülasyonu
+        function launchDrone() {
+            const droneType = document.getElementById('droneType').value;
+            const target = document.getElementById('targetCoords').value || '36.879, 30.702';
+            const droneNames = {
+                iha: 'Tactical İHA',
+                siha: 'SİHA-AKINCI',
+                anka: 'ANKA-S'
+            };
+            
+            addLog(`${droneNames[droneType]} gönderildi: Hedef ${target}`, 'success');
+        }
+        
+        // Drone ile hedef imha etme
+        function fireDrone() {
+            const droneType = document.getElementById('droneType').value;
+            const target = document.getElementById('targetCoords').value || '36.879, 30.702';
+            const droneNames = {
+                iha: 'Tactical İHA',
+                siha: 'SİHA-AKINCI',
+                anka: 'ANKA-S'
+            };
+            
+            addLog(`${droneNames[droneType]} hedefi imha etti: ${target}`, 'danger');
+        }
+        
+        // Füze fırlatma simülasyonu
+        function launchMissile() {
+            const missileType = document.getElementById('missileType').value;
+            const target = document.getElementById('missileTarget').value || '39.933, 32.859';
+            const missileNames = {
+                short: 'Kısa Menzil (T-122)',
+                medium: 'Orta Menzil (BORA-1)',
+                long: 'Uzun Menzil (SOM-J)',
+                nuke: 'Nükleer Başlıklı'
+            };
+            
+            addLog(`${missileNames[missileType]} fırlatıldı: Hedef ${target}`, 'warning');
+        }
+        
+        // Nükleer füze fırlatma
+        function launchNuke() {
+            const target = document.getElementById('missileTarget').value || '39.933, 32.859';
+            const nuke = document.getElementById('nukeAnimation');
+            
+            addLog('KRİTİK UYARI: NÜKLEER SİLAH AKTİF EDİLDİ!', 'danger');
+            addLog(`Nükleer füze hedefe gönderildi: ${target}`, 'danger');
+            
+            // Nükleer animasyonu göster
+            nuke.style.display = 'block';
+            setTimeout(() => {
+                nuke.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Sayfa yüklendiğinde çalıştır
+        window.onload = function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            addRandomMarkers();
+            
+            // Menü tıklamalarını yönet
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // İlk logları ekle
+            setTimeout(() => addLog('Harita verileri güncellendi.', 'info'), 2000);
+            setTimeout(() => addLog('Tüm füze sistemleri hazır durumda.', 'success'), 3500);
+            setTimeout(() => addLog('Sınır güvenlik taraması başlatıldı.', 'info'), 5000);
+        };
+    </script>
+</body>
+</html>
